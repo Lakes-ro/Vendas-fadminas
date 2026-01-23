@@ -1,64 +1,135 @@
-body {
-    /* Cor de fundo powderblue, como na imagem */
-    background-color: powderblue;
-    font-family: 'Inter', sans-serif;
-}
-.card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-    background-color: rgb(155, 218, 230);
-}
-.card:hover {
-    transform: translateY(-5px);
-}
-.product-img {
-    height: 150px;
-    object-fit: contain;
-}
-/* Estilos personalizados para letra dos adicionar dos botões */
-.btn-add-cart {
-    background-color: #3b82f6;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 9999px;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s ease;
-}
-.btn-add-cart:hover {
-    background-color: #2563eb;
-}
-.btn-enviar {
-    background-color: #4CAF50; /* Botão enviar Cor verde */
-    color: white;
-    padding: 12px 24px;
-    border-radius: 9999px;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s ease;
-}
-.btn-enviar:hover {
-    background-color: #45a049;
-}
-.btn-remover {
-    background-color: #ef4444; /* Cor vermelha para remoção */
-    color: white;
-    padding: 12px 24px;
-    border-radius: 9999px;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(57, 187, 100, 0.1);
-    transition: background-color 0.3s ease;
-}
-.btn-remover:hover {
-    background-color: #dc2626;
+/* 1. RESET E VARIAVEIS */
+:root {
+    --accent: #3b82f6;      /* Azul principal */
+    --accent-hover: #2563eb;
+    --bg-dark: #0b0f1a;     /* Fundo principal */
+    --bg-card: #161b2c;     /* Fundo dos cards */
+    --text-main: #e2e8f0;
+    --border-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Estilo para o botão de remover item individualmente */
-.btn-remover-item {
-    background-color: transparent;
-    border: none;
-    color: #ef4444; /* Vermelho */
-    font-size: 1.2rem;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+/* 2. ANIMAÇÕES (Para dar o feeling de App moderno) */
+.animate-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* 3. UTILITÁRIOS */
+.hidden {
+    display: none !important;
+}
+
+/* 4. CUSTOM SCROLLBAR */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+/* 5. CARDS DE PRODUTO */
+#product-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.product-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 2rem; /* 32px */
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.product-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.product-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    background: #0f172a;
+}
+
+/* 6. CARRINHO (DRAWER) */
+#cart-drawer {
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.8);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 7. ADMIN LIST */
+#admin-list > div {
+    transition: all 0.2s ease;
+}
+
+#admin-list > div:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 8. BOTÕES */
+button {
     cursor: pointer;
-    margin-left: 10px;
+    transition: filter 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 9. RESPONSIVIDADE ADICIONAL */
+@media (max-width: 1024px) {
+    aside {
+        width: 80px;
+    }
+    
+    .lg\:block {
+        display: none;
+    }
 }
