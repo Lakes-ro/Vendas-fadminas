@@ -2,138 +2,561 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Fadvendas </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0f1a">
+    <meta name="description" content="FadVendas - ERP & E-commerce com BI integrado">
+
+    <title>Fadvendas | Business Intelligence</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
+
+    <!-- ESTILOS -->
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./store-status.css">
+
+    <!-- TAILWIND CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- CHART.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+    <!-- SUPABASE JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- LUCIDE ICONS -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- ESTILOS INLINE PARA ADS PREVIEW -->
     <style>
-        .animate-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        #ad-form-text textarea { font-family: 'Inter', sans-serif; }
+        #preview-title { word-break: break-word; }
+        #preview-text { word-break: break-word; white-space: pre-wrap; }
     </style>
 </head>
-<body class="bg-[#0b0f1a] text-slate-200 flex min-h-screen font-sans">
+<body class="bg-[#0b0f1a] text-slate-200 flex min-h-screen font-sans overflow-x-hidden">
 
-    <aside class="w-20 lg:w-64 border-r border-slate-800/50 p-4 flex flex-col sticky top-0 h-screen bg-[#0b0f1a] z-[100]">
-        <div class="text-blue-500 font-black text-xl mb-10 italic tracking-tighter text-center lg:text-left">
-            TÁ COM FOME?
-        </div>
-        
+    <!-- ========================================
+         SIDEBAR NAVEGAÇÃO
+         ======================================== -->
+    <aside class="w-20 lg:w-64 border-r border-slate-800/50 p-4 flex flex-col sticky top-0 h-screen bg-[#0b0f1a] z-40">
+        <div class="text-blue-500 font-black text-xl mb-10 italic tracking-tighter text-center lg:text-left uppercase">Fad_Vendas</div>
+
         <nav class="flex-1 space-y-2">
-    <button onclick="showTab('market')" class="w-full flex items-center gap-4 p-4 rounded-2xl">
-        <i data-lucide="shopping-bag"></i>
-        <span class="font-bold text-sm">LOJA</span> </button>
-    <button onclick="showTab('admin')" class="w-full flex items-center gap-4 p-4 rounded-2xl">
-        <i data-lucide="shield-check"></i>
-        <span class="font-bold text-sm">ADMIN</span> </button>
-    <button onclick="showTab('ads-manager')" class="w-full flex items-center gap-4 p-4 rounded-2xl">
-        <i data-lucide="megaphone"></i>
-        <span class="font-bold text-sm">ANÚNCIOS</span> </button>
-</nav>
+            <!-- LOJA - Sempre visível -->
+            <button onclick="goToTab('market')" class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="shopping-bag" class="flex-shrink-0"></i>
+                <span class="hidden lg:block font-bold text-sm group-hover:text-white">LOJA</span>
+            </button>
 
-        <button onclick="toggleCart()" class="relative p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center gap-3 hover:border-blue-500/50 transition-all">
-            <i data-lucide="shopping-cart" class="text-blue-500"></i>
-            <span id="cart-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">0</span>
-        </button>
+            <!-- BI - Apenas Admin Supremo -->
+            <button id="bi-nav-btn" onclick="goToTab('bi')" class="w-full hidden flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="bar-chart-3" class="flex-shrink-0 text-green-500"></i>
+                <span class="hidden lg:block font-bold text-sm group-hover:text-white">BI / GESTÃO</span>
+            </button>
+
+            <!-- ADMIN - Apenas Admin Supremo -->
+            <button id="admin-nav-btn" onclick="goToTab('admin')" class="w-full hidden flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="shield-alert" class="flex-shrink-0 text-red-500"></i>
+                <span class="hidden lg:block font-bold text-sm text-red-500 group-hover:text-red-400">ADMIN</span>
+            </button>
+
+            <!-- ESTOQUE - Apenas Vendedor -->
+            <button id="seller-nav-btn" onclick="goToTab('seller')" class="w-full hidden flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="package" class="flex-shrink-0 text-blue-500"></i>
+                <span class="hidden lg:block font-bold text-sm text-blue-500 group-hover:text-blue-400">ESTOQUE</span>
+            </button>
+
+            <!-- ANÚNCIOS - Apenas Vendedor -->
+            <button id="ads-nav-btn" onclick="goToTab('ads')" class="w-full hidden flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="megaphone" class="flex-shrink-0 text-yellow-500"></i>
+                <span class="hidden lg:block font-bold text-sm text-yellow-500 group-hover:text-yellow-400">ANÚNCIOS</span>
+            </button>
+
+            <!-- VENDEDORES - Apenas Supremo -->
+            <button id="tenants-nav-btn" onclick="goToTab('tenants')" class="w-full hidden flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                <i data-lucide="building-2" class="flex-shrink-0 text-purple-500"></i>
+                <span class="hidden lg:block font-bold text-sm text-purple-500 group-hover:text-purple-400">VENDEDORES</span>
+            </button>
+        </nav>
+
+        <!-- BOTÕES DE AÇÃO -->
+        <div class="flex flex-col gap-2 mt-auto">
+            <!-- Carrinho -->
+            <button onclick="toggleCart()" class="relative p-4 bg-blue-600 rounded-2xl flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 group">
+                <i data-lucide="shopping-cart" class="text-white flex-shrink-0"></i>
+                <span id="cart-count" class="absolute -top-1 -right-1 bg-white text-blue-600 text-[10px] px-1.5 py-0.5 rounded-full font-black">0</span>
+                <span class="hidden lg:block text-white font-bold text-xs">CARRINHO</span>
+            </button>
+
+            <!-- Login -->
+            <button id="login-btn" onclick="openLogin('login')" class="w-full flex items-center gap-2 p-4 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs uppercase transition-all z-50 relative justify-center lg:justify-start">
+                <i data-lucide="log-in" class="flex-shrink-0"></i>
+                <span class="hidden lg:block">Conta</span>
+            </button>
+
+            <!-- Logout -->
+            <button id="logout-btn" onclick="doLogout()" class="w-full hidden flex items-center gap-2 p-4 rounded-2xl hover:bg-white/5 text-slate-400 font-bold text-xs uppercase transition-all justify-center lg:justify-start">
+                <i data-lucide="log-out" class="flex-shrink-0"></i>
+                <span class="hidden lg:block">Sair</span>
+            </button>
+        </div>
     </aside>
 
+    <!-- ========================================
+         CONTEÚDO PRINCIPAL
+         ======================================== -->
     <main class="flex-1 p-6 overflow-x-hidden">
+
+        <!-- ===== MARKETPLACE / LOJA ===== -->
         <section id="market-section" class="animate-in">
-            <div id="hero-ads" class="mb-12 w-full h-48 bg-gradient-to-r from-blue-900 to-slate-900 rounded-[32px] relative border border-white/5 flex items-center p-8 overflow-hidden">
-                <div class="relative z-10">
-                    <span class="bg-blue-500 text-[10px] font-black px-3 py-1 rounded-full text-white uppercase tracking-widest">Destaque</span>
-                    <h2 id="ad-title" class="text-3xl font-black text-white mt-2 leading-none uppercase">Oferta Especial</h2>
-                    <p id="ad-desc" class="text-slate-400 mt-2 text-sm font-medium">Os melhores produtos selecionados para você.</p>
-                </div>
-                <div class="absolute right-0 top-0 h-full w-1/2 bg-blue-500/10 blur-3xl rounded-full"></div>
+            <!-- BANNER DE ANÚNCIOS -->
+            <div
+                id="ads-hero"
+                onclick="window.APP?.ads?.clickAd()"
+                class="mb-12 w-full h-48 bg-slate-900 rounded-[32px] relative border border-white/5 overflow-hidden shadow-2xl cursor-pointer group">
+                <img id="hero-ads-img" class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="Anúncio" />
+                <div id="hero-ads-fallback" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800"></div>
             </div>
 
-            <h2 class="text-3xl font-black mb-8 tracking-tighter">Marketplace_</h2>
-            <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <!-- GRID DE PRODUTOS -->
+            <h2 class="text-3xl font-black mb-6">Marketplace</h2>
+            <div id="product-grid" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
         </section>
 
+        <!-- ===== BI DASHBOARD ===== -->
+        <section id="bi-section" class="hidden animate-in">
+            <h2 class="text-3xl font-black mb-6 text-green-500">DASHBOARD BI</h2>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-slate-900/50 p-6 rounded-[20px] border border-white/5">
+                    <div class="text-slate-500 text-xs uppercase font-black mb-2">FATURAMENTO</div>
+                    <div id="bi-revenue" class="text-3xl font-black text-green-500">R$ 0,00</div>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-[20px] border border-white/5">
+                    <div class="text-slate-500 text-xs uppercase font-black mb-2">LUCRO</div>
+                    <div id="bi-profit" class="text-3xl font-black text-blue-500">R$ 0,00</div>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-[20px] border border-white/5">
+                    <div class="text-slate-500 text-xs uppercase font-black mb-2">MARGEM</div>
+                    <div id="bi-margin" class="text-3xl font-black text-yellow-500">0%</div>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-[20px] border border-white/5">
+                    <div class="text-slate-500 text-xs uppercase font-black mb-2">PEDIDOS</div>
+                    <div id="bi-orders" class="text-3xl font-black text-purple-500">0</div>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-white/5">
+                    <h3 class="text-lg font-black text-slate-300 mb-4">📈 Faturamento (Últimos 7 dias)</h3>
+                    <div style="height: 300px;">
+                        <canvas id="chart-revenue"></canvas>
+                    </div>
+                </div>
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-white/5">
+                    <h3 class="text-lg font-black text-slate-300 mb-4">🏆 Top Produtos</h3>
+                    <div style="height: 300px;">
+                        <canvas id="chart-products"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETALHAMENTO DE PEDIDOS -->
+            <div class="mb-6">
+                <h3 class="text-lg font-black text-slate-300 mb-4">📋 Detalhamento</h3>
+                <div id="bi-orders-detail" class="space-y-3"></div>
+            </div>
+        </section>
+
+        <!-- ===== TENANTS / VENDEDORES ===== -->
+        <section id="tenants-section" class="hidden animate-in">
+            <h2 class="text-3xl font-black mb-6 text-purple-500">🏪 GERENCIAR VENDEDORES</h2>
+
+            <div id="tenants-stats" class="mb-8">
+                <div class="text-slate-600 text-center py-4">Carregando stats...</div>
+            </div>
+
+            <h3 class="text-xl font-black mb-4 text-slate-300">📊 Vendedores</h3>
+            <div id="tenants-list" class="space-y-4">
+                <div class="text-slate-600 text-center py-8">Carregando...</div>
+            </div>
+        </section>
+
+        <!-- ===== ADMIN PANEL ===== -->
         <section id="admin-section" class="hidden animate-in">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-black text-red-500 tracking-tighter uppercase">Painel de Controle</h2>
-                <button onclick="openModal()" class="bg-white text-black px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Novo Item</button>
-            </div>
-            <div id="admin-list" class="space-y-3 max-w-2xl"></div>
+            <h2 class="text-3xl font-black mb-6 text-red-500">ADMIN PANEL</h2>
+
+            <button onclick="window.APP.admin.openModal()" class="mb-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 px-6 rounded-2xl transition-all">
+                ➕ NOVO PRODUTO
+            </button>
+
+            <div id="admin-list" class="space-y-3"></div>
         </section>
 
+        <!-- ===== SELLER PANEL (ESTOQUE) ===== -->
+        <section id="seller-section" class="hidden animate-in">
+            <h2 class="text-3xl font-black mb-6 text-blue-500">ESTOQUE</h2>
+
+            <button onclick="window.APP.admin.openModal()" class="mb-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-3 px-6 rounded-2xl transition-all">
+                ➕ NOVO PRODUTO
+            </button>
+
+            <div id="seller-list" class="space-y-3"></div>
+        </section>
+
+        <!-- ===== ADS PANEL ===== -->
         <section id="ads-section" class="hidden animate-in">
-            <h2 class="text-3xl font-black text-yellow-500 mb-8 tracking-tighter uppercase">Gerenciar Anúncios</h2>
-            <div class="bg-slate-900/50 p-8 rounded-[32px] border border-white/5 max-w-md">
-                <div class="space-y-4">
-                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Texto Principal</label>
-                    <input type="text" id="ad-input-title" placeholder="Título do Banner" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-yellow-500 transition-all">
-                    
-                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Subtexto</label>
-                    <textarea id="ad-input-desc" placeholder="Breve descrição da oferta" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none h-24 focus:ring-2 ring-yellow-500 transition-all"></textarea>
-                    
-                    <button onclick="updateLiveAd()" class="w-full bg-yellow-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-yellow-500/20 hover:bg-yellow-500 transition-all">ATUALIZAR BANNER</button>
+            <h2 class="text-3xl font-black mb-6 text-yellow-500">📢 ANÚNCIOS</h2>
+
+            <!-- ABAS: TIPO DE ANÚNCIO -->
+            <div class="flex gap-3 mb-6">
+                <button
+                    id="btn-ad-type-image"
+                    onclick="window.APP.ads.toggleAdType('image')"
+                    class="flex-1 py-3 px-4 rounded-2xl font-bold transition-all bg-blue-600 text-white">
+                    🖼️ ANÚNCIO COM IMAGEM
+                </button>
+                <button
+                    id="btn-ad-type-text"
+                    onclick="window.APP.ads.toggleAdType('text')"
+                    class="flex-1 py-3 px-4 rounded-2xl font-bold transition-all text-slate-400 hover:bg-white/5">
+                    📝 ANÚNCIO COM TEXTO
+                </button>
+            </div>
+
+            <!-- FORMULÁRIO 1: ANÚNCIO COM IMAGEM -->
+            <form id="ad-form-image" class="mb-8" onsubmit="window.APP.ads.saveAd(event, 'image')">
+                <div class="bg-slate-900/50 p-6 rounded-3xl border border-white/5 space-y-4">
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">🖼️ IMAGEM DO ANÚNCIO</label>
+                        <button
+                            type="button"
+                            id="ad-image-drop-zone"
+                            onclick="document.getElementById('ad-image-input').click()"
+                            class="w-full border-2 border-dashed border-slate-600 rounded-2xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                            <input
+                                id="ad-image-input"
+                                type="file"
+                                accept="image/*"
+                                class="hidden"
+                                onchange="document.getElementById('ad-image-name').innerText = this.files[0]?.name || 'Nenhum arquivo escolhido'">
+                            <div class="text-4xl mb-2">📁</div>
+                            <span id="ad-image-name" class="text-slate-400">Clique ou arraste uma imagem</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">🔗 LINK (WhatsApp, site, etc)</label>
+                        <input
+                            id="ad-link-input"
+                            type="text"
+                            placeholder="https://wa.me/5535991264352"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition-all uppercase mt-6">
+                        📤 PUBLICAR ANÚNCIO COM IMAGEM
+                    </button>
+                </div>
+            </form>
+
+            <!-- FORMULÁRIO 2: ANÚNCIO COM TEXTO -->
+            <form id="ad-form-text" class="mb-8 hidden" onsubmit="window.APP.ads.saveAd(event, 'text')">
+                <div class="bg-slate-900/50 p-6 rounded-3xl border border-white/5 space-y-4">
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">📝 TÍTULO DO ANÚNCIO</label>
+                        <input
+                            id="ad-text-title"
+                            type="text"
+                            placeholder="Ex: PROMOÇÃO 50% OFF"
+                            maxlength="100"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none">
+                        <div class="text-[10px] text-slate-500 mt-1">Máximo 100 caracteres</div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">✍️ CONTEÚDO / DESCRIÇÃO</label>
+                        <textarea
+                            id="ad-text-content"
+                            placeholder="Digite aqui a mensagem do seu anúncio..."
+                            maxlength="500"
+                            rows="5"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none resize-none"></textarea>
+                        <div class="text-[10px] text-slate-500 mt-1">Máximo 500 caracteres</div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">🔗 LINK (Opcional)</label>
+                        <input
+                            id="ad-text-link"
+                            type="text"
+                            placeholder="https://wa.me/5535991264352"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none">
+                        <div class="text-[10px] text-slate-500 mt-1">Será aberto ao clicar no anúncio</div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-black text-slate-300 uppercase block mb-2">👁️ PREVIEW</label>
+                        <div class="bg-slate-800 border border-white/10 rounded-xl p-4 min-h-32 flex items-center justify-center">
+                            <div class="text-center">
+                                <h3 id="preview-title" class="text-2xl font-black text-yellow-400 mb-2">TÍTULO DO ANÚNCIO</h3>
+                                <p id="preview-text" class="text-sm text-slate-300">Conteúdo do seu anúncio aparecerá aqui</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition-all uppercase mt-6">
+                        📤 PUBLICAR ANÚNCIO COM TEXTO
+                    </button>
+                </div>
+            </form>
+
+            <!-- LISTA DE ANÚNCIOS PUBLICADOS -->
+            <div class="mt-8">
+                <h3 class="text-lg font-black text-slate-300 mb-4">📊 Anúncios Publicados</h3>
+                <div id="ads-list" class="space-y-3">
+                    <div class="text-center text-slate-500 py-8">Carregando anúncios...</div>
                 </div>
             </div>
         </section>
+
     </main>
 
-    <div id="admin-modal" class="hidden fixed inset-0 z-[2000] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-[#161b2c] p-6 rounded-[32px] w-full max-w-md border border-slate-800 shadow-2xl">
-            <h3 class="text-xl font-black mb-6 uppercase tracking-widest text-white">Cadastrar Item</h3>
-            <form onsubmit="saveProduct(event)" class="space-y-4">
-                <input type="text" id="p-name" placeholder="Nome do Produto" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500" required>
-                <input type="number" id="p-price" placeholder="Valor (R$)" step="0.01" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500" required>
-                <textarea id="p-desc" placeholder="Descrição (Opcional)" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500 h-20"></textarea>
-                
-                <div class="bg-slate-900 p-4 rounded-2xl border-2 border-dashed border-slate-700">
-                    <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest text-center">Imagem do Produto</label>
-                    <input type="file" id="p-image" accept="image/*" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-                </div>
+    <!-- ========================================
+         CART DRAWER
+         ======================================== -->
+    <div id="cart-drawer" class="fixed right-0 top-0 w-96 h-screen bg-[#161b2c] border-l border-white/5 shadow-2xl translate-x-full transition-transform duration-300 z-50 flex flex-col p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-black">CARRINHO</h3>
+            <button onclick="window.APP.cart.closeDrawer()" class="text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
 
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeModal()" class="flex-1 p-4 bg-slate-800 rounded-2xl font-bold hover:bg-slate-700 transition-all">VOLTAR</button>
-                    <button type="submit" id="btn-save" class="flex-1 p-4 bg-blue-600 rounded-2xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-500 transition-all uppercase text-xs tracking-widest text-white">Salvar Item</button>
-                </div>
+        <div id="cart-items" class="flex-1 space-y-3 mb-6"></div>
+
+        <div class="border-t border-white/5 pt-4">
+            <div class="flex justify-between text-lg font-black mb-4">
+                <span>TOTAL</span>
+                <span id="cart-total" class="text-blue-500">R$ 0,00</span>
+            </div>
+            <button onclick="window.APP.orders.checkout()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition-all">
+                ✓ FINALIZAR COMPRA
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================
+         AUTH MODAL
+         ======================================== -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
+        <div class="bg-[#161b2c] p-8 rounded-[40px] w-full max-w-md border border-white/10 shadow-2xl">
+            <!-- ABAS -->
+            <div class="flex gap-2 mb-6">
+                <button id="login-tab-btn" onclick="window.APP.auth.showLoginTab()" class="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-bold text-sm uppercase transition-all">
+                    LOGIN
+                </button>
+                <button id="signup-tab-btn" onclick="window.APP.auth.showSignupTab()" class="flex-1 py-3 rounded-2xl text-slate-400 font-bold text-sm uppercase transition-all hover:text-white">
+                    CADASTRO
+                </button>
+                <button id="forgot-tab-btn" onclick="window.APP.auth.showForgotTab()" class="flex-1 py-3 rounded-2xl text-slate-400 font-bold text-sm uppercase transition-all hover:text-white">
+                    SENHA
+                </button>
+            </div>
+
+            <!-- LOGIN TAB -->
+            <div id="login-tab" class="space-y-4">
+                <form onsubmit="window.APP.auth.login(event)" class="space-y-4">
+                    <input id="login-email" type="email" placeholder="Email" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <input id="login-password" type="password" placeholder="Senha" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all">
+                        ENTRAR
+                    </button>
+                </form>
+            </div>
+
+            <!-- SIGNUP TAB -->
+            <div id="signup-tab" class="hidden space-y-4">
+                <form onsubmit="window.APP.auth.signup(event)" class="space-y-4">
+                    <input id="signup-name" type="text" placeholder="Nome" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <input id="signup-email" type="email" placeholder="Email" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <input id="signup-phone" type="tel" placeholder="Telefone" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <input id="signup-password" type="password" placeholder="Senha (mín 6 caracteres)" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition-all">
+                        CADASTRAR
+                    </button>
+                </form>
+            </div>
+
+            <!-- FORGOT PASSWORD TAB -->
+            <div id="forgot-tab" class="hidden space-y-4">
+                <p class="text-slate-400 text-sm text-center">Digite seu email para receber o link de redefinição de senha.</p>
+                <form onsubmit="window.APP.auth.sendPasswordReset(event)" class="space-y-4">
+                    <input id="forgot-email" type="email" placeholder="Seu email" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                    <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-2xl transition-all">
+                        📧 ENVIAR LINK DE RECUPERAÇÃO
+                    </button>
+                </form>
+            </div>
+
+            <button onclick="window.APP.auth.closeAuthModal()" class="mt-4 w-full text-slate-400 hover:text-white font-bold py-2 transition-all">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================
+         TENANT DETAILS MODAL
+         ======================================== -->
+    <div id="tenant-details-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
+        <div class="bg-[#161b2c] p-8 rounded-[40px] w-full max-w-md border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 id="tenant-details-title" class="text-2xl font-black mb-6">DETALHES</h3>
+            <div id="tenant-details-content" class="space-y-2">
+                <div class="text-slate-600 text-center py-8">Carregando...</div>
+            </div>
+            <button onclick="window.APP.tenants.closeTenantDetailsModal()" class="mt-6 w-full text-slate-400 hover:text-white font-bold py-2 transition-all">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================
+         ADMIN MODAL (Criar/Editar Produto)
+         ======================================== -->
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
+        <div class="bg-[#161b2c] p-8 rounded-[40px] w-full max-w-md border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-2xl font-black mb-6">NOVO PRODUTO</h3>
+
+            <form onsubmit="window.APP.products.saveProduct(event)" class="space-y-4">
+                <input id="p-name" type="text" placeholder="Nome do Produto" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                <input id="p-price" type="number" step="0.01" placeholder="Preço de Venda" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                <input id="p-cost" type="number" step="0.01" placeholder="Custo" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500">
+                <input id="p-stock" type="number" placeholder="Estoque" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500">
+                <textarea id="p-desc" placeholder="Descrição" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500 resize-none h-20"></textarea>
+                <input id="p-image" type="file" accept="image/*" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white">
+
+                <button id="btn-save" type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all">
+                    ✓ SALVAR
+                </button>
+                <button type="button" onclick="window.APP.admin.closeModal()" class="w-full text-slate-400 hover:text-white font-bold py-2 transition-all">
+                    Cancelar
+                </button>
             </form>
         </div>
     </div>
 
-    <div id="customer-modal" class="hidden fixed inset-0 z-[3000] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-[#161b2c] p-8 rounded-[40px] w-full max-w-sm border border-slate-800 shadow-2xl">
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tighter text-white">Finalizar Pedido</h3>
-            <form onsubmit="sendOrder(event)" class="space-y-4">
-                <input type="text" id="cust-name" placeholder="Seu Nome" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500" required>
-                <input type="text" id="cust-address" placeholder="Alguma observação? (Opcional)" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500" required>
-                
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Pagamento</label>
-                    <select id="cust-payment" class="w-full bg-slate-900 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-blue-500 appearance-none" required>
-                        <option value="Pix">Pix (Rápido)</option>
-                    <!--<option value="Cartão de Crédito">Cartão de Crédito</option> -->
-                    <!--<option value="Cartão de Débito">Cartão de Débito</option> -->
-                        <option value="Dinheiro">Dinheiro</option>
-                    </select>
-                </div>
+    <!-- ========================================
+         CUSTOMER CHECKOUT MODAL
+         ======================================== -->
+    <div id="customer-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm">
+        <div class="bg-[#161b2c] p-8 rounded-[40px] w-full max-w-md border border-white/10 shadow-2xl">
+            <h3 class="text-2xl font-black mb-6">FINALIZAR COMPRA</h3>
 
-                <button type="submit" class="w-full p-4 bg-green-600 rounded-2xl font-black text-white shadow-lg shadow-green-500/20 hover:bg-green-500 transition-all uppercase tracking-widest text-xs mt-4">Confirmar no WhatsApp</button>
-                <button type="button" onclick="closeCustomerModal()" class="w-full p-2 text-slate-500 text-xs font-bold uppercase tracking-widest">Voltar</button>
+            <form onsubmit="window.APP.orders.sendOrder(event)" class="space-y-4">
+                <input id="cust-name" type="text" placeholder="Seu Nome" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                <input id="cust-phone" type="tel" placeholder="WhatsApp (com DDD)" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white placeholder-slate-500" required>
+                <select id="cust-payment" class="w-full p-4 rounded-2xl bg-slate-800 border border-white/5 text-white" required>
+                    <option value="">Escolha a forma de pagamento</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Dinheiro">Dinheiro na Entrega</option>
+                    <option value="Cartão">Cartão na Entrega</option>
+                </select>
+
+                <button id="btn-finish" type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition-all">
+                    ✓ CONFIRMAR COMPRA
+                </button>
+                <button type="button" onclick="window.APP.orders.closeCustomerModal()" class="w-full text-slate-400 hover:text-white font-bold py-2 transition-all">
+                    Cancelar
+                </button>
             </form>
         </div>
     </div>
 
-    <div id="cart-drawer" class="fixed right-0 top-0 h-screen w-80 bg-[#0f172a] border-l border-slate-800 translate-x-full transition-transform z-[1000] p-6 flex flex-col shadow-2xl">
-        <div class="flex justify-between items-center mb-10">
-            <h3 class="text-xl font-black tracking-tighter italic">CARRINHO_</h3>
-            <button onclick="toggleCart()" class="text-slate-500 hover:text-white transition-all"><i data-lucide="x"></i></button>
-        </div>
-        <div id="cart-items" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
-        <div class="pt-6 border-t border-slate-800 mt-4">
-            <div id="cart-total" class="text-3xl font-black text-blue-500 mb-6 text-center tracking-tighter">R$ 0,00</div>
-            <button onclick="checkout()" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 transition-all uppercase text-xs tracking-widest">Fechar Pedido</button>
-        </div>
-    </aside>
+    <!-- ========================================
+         SCRIPTS — ordem importa!
+         ======================================== -->
+    <!-- 1. CONFIG -->
+    <script src="./config.js"></script>
 
-    <script src="script.js"></script>
+    <!-- 2. STORAGE -->
+    <script src="./storage.js"></script>
+
+    <!-- 3. WRAPPER + AUTH -->
+    <script src="./wrapper.js"></script>
+    <script src="./auth.js"></script>
+
+    <!-- 4. STORE STATUS -->
+    <script src="./store-status.js"></script>
+
+    <!-- 5. MÓDULOS -->
+    <script src="./cart.js"></script>
+    <script src="./admin.js"></script>
+    <script src="./products.js"></script>
+    <script src="./ads.js"></script>
+    <script src="./bi.js"></script>
+    <script src="./navigation.js"></script>
+    <script src="./tenants.js"></script>
+    <script src="./orders.js"></script>
+
+    <!-- 6. APP PRINCIPAL -->
+    <script src="./app.js"></script>
+
+    <!-- 7. ADS PREVIEW + DRAG & DROP (após DOM pronto) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Preview em tempo real
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'ad-text-title') {
+                    const el = document.getElementById('preview-title');
+                    if (el) el.innerText = e.target.value || 'TÍTULO DO ANÚNCIO';
+                }
+                if (e.target.id === 'ad-text-content') {
+                    const el = document.getElementById('preview-text');
+                    if (el) el.innerText = e.target.value || 'Conteúdo do seu anúncio aparecerá aqui';
+                }
+            });
+
+            // Drag and drop para imagem de anúncio
+            const dropZone = document.getElementById('ad-image-drop-zone');
+            const imageInput = document.getElementById('ad-image-input');
+
+            if (dropZone && imageInput) {
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+                    dropZone.addEventListener(ev, preventDefaults, false);
+                });
+
+                ['dragenter', 'dragover'].forEach(ev => {
+                    dropZone.addEventListener(ev, () => {
+                        dropZone.classList.add('border-blue-500', 'bg-blue-500/10');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(ev => {
+                    dropZone.addEventListener(ev, () => {
+                        dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+                    });
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    if (files.length) {
+                        imageInput.files = files;
+                        document.getElementById('ad-image-name').innerText = files[0].name;
+                    }
+                });
+            }
+        });
+    </script>
+
 </body>
 </html>
