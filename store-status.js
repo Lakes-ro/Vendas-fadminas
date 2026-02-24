@@ -1,7 +1,6 @@
 /**
- * STORE-STATUS.JS v2.0 - FINAL E FUNCIONAL
+ * STORE-STATUS.JS v2.1
  * Sistema de Controle de Expediente + Sabbath Mode
- * COM INTEGRAÇÃO PRONTA NA APP
  */
 
 const StoreStatus = {
@@ -10,11 +9,13 @@ const StoreStatus = {
     checkInterval: null,
 
     /**
-     * ✅ Verifica status da loja baseado na hora local
+     * Verifica status da loja baseado na hora local
+     * Horário noturno: 01:00 - 06:00
+     * Sabbath: Sexta 18:00 - Sábado 18:00
      */
     checkStoreStatus() {
         const now = new Date();
-        const dayOfWeek = now.getDay(); // 0=Dom, 1=Seg, ..., 5=Sex, 6=Sab
+        const dayOfWeek = now.getDay(); // 0=Dom, 1=Seg ... 5=Sex, 6=Sab
         const hours = now.getHours();
         const minutes = now.getMinutes();
         const totalMinutes = hours * 60 + minutes;
@@ -27,11 +28,8 @@ const StoreStatus = {
             return 'sabbath_closed';
         }
 
-        // REGRA 2: FECHAMENTO NOTURNO (23:30 - 06:00)
-        if (totalMinutes >= 23 * 60 + 30) {
-            return 'night_closed';
-        }
-        if (totalMinutes < 6 * 60) {
+        // REGRA 2: FECHAMENTO NOTURNO (01:00 - 06:00)
+        if (totalMinutes >= 1 * 60 && totalMinutes < 6 * 60) {
             return 'night_closed';
         }
 
@@ -39,26 +37,26 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ Obtém mensagem amigável
+     * Mensagens por status
      */
     getStatusMessage() {
         const messages = {
             night_closed: {
-                title: '😴 Nossas lojas estão a descansar',
-                subtitle: 'Voltamos às 06:00!',
                 emoji: '😴',
-                description: 'Nossos horários de funcionamento são de 06:00 às 23:30 todos os dias.'
+                title: 'Nossas lojas estão a descansar',
+                subtitle: 'Voltamos às 06:00!',
+                description: 'Nossos horários de funcionamento são de 06:00 às 01:00 todos os dias.'
             },
             sabbath_closed: {
-                title: '🌅 Feliz Sábado!',
-                subtitle: 'Shalom! 🕊️',
                 emoji: '🌅',
+                title: 'Feliz Sábado!',
+                subtitle: 'Shalom! 🕊️',
                 description: 'Em observância aos princípios bíblicos, nossas operações de compra e venda estão pausadas até às 18h00 de sábado. Aproveite o dia para descanso e família.'
             },
             open: {
-                title: '✅ Loja Aberta',
-                subtitle: 'Bem-vindo!',
                 emoji: '✅',
+                title: 'Loja Aberta',
+                subtitle: 'Bem-vindo!',
                 description: 'Estamos prontos para servi-lo!'
             }
         };
@@ -67,43 +65,36 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ Obtém próxima reabertura
+     * Próxima reabertura
      */
     getNextOpenTime() {
         const now = new Date();
         const dayOfWeek = now.getDay();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        const totalMinutes = hours * 60 + minutes;
 
         if (this.status === 'sabbath_closed') {
             const nextOpen = new Date(now);
-            nextOpen.setDate(nextOpen.getDate() + (dayOfWeek === 6 ? 0 : 1));
-            nextOpen.setHours(18, 0, 0, 0);
-            
-            if (dayOfWeek === 5 && totalMinutes < 18 * 60) {
-                nextOpen.setDate(nextOpen.getDate() - 1);
+            if (dayOfWeek === 6) {
+                // Sábado: reabre hoje às 18:00
+                nextOpen.setHours(18, 0, 0, 0);
+            } else {
+                // Sexta após 18:00: reabre amanhã às 18:00
+                nextOpen.setDate(nextOpen.getDate() + 1);
+                nextOpen.setHours(18, 0, 0, 0);
             }
-            
-            return nextOpen.toLocaleString('pt-BR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+            return nextOpen.toLocaleString('pt-BR', {
+                weekday: 'long',
                 day: 'numeric',
+                month: 'long',
                 hour: '2-digit',
                 minute: '2-digit'
             });
         }
 
         if (this.status === 'night_closed') {
+            // Sempre reabre às 06:00 do mesmo dia (intervalo é 01:00-06:00)
             const nextOpen = new Date(now);
             nextOpen.setHours(6, 0, 0, 0);
-            
-            if (totalMinutes >= 23 * 60 + 30) {
-                nextOpen.setDate(nextOpen.getDate() + 1);
-            }
-            
-            return nextOpen.toLocaleString('pt-BR', { 
+            return nextOpen.toLocaleString('pt-BR', {
                 hour: '2-digit',
                 minute: '2-digit'
             });
@@ -113,13 +104,15 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ Inicializa o sistema
+     * Inicializa o sistema
      */
     init() {
         try {
             log('🔍 Inicializando StoreStatus...', 'info');
 
-            this.updateStatus();
+            this.status = this.checkStoreStatus();
+            this.renderOverlay();
+            this.updateButtonStates();
 
             // Verificar a cada 1 minuto
             this.checkInterval = setInterval(() => {
@@ -133,7 +126,7 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ Atualiza status e renderiza overlay
+     * Atualiza status e re-renderiza se mudou
      */
     updateStatus() {
         const newStatus = this.checkStoreStatus();
@@ -149,13 +142,16 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ Renderiza overlay de bloqueio
+     * Renderiza overlay de bloqueio
      */
     renderOverlay() {
         let overlay = document.getElementById('store-closed-overlay');
 
         if (this.status === 'open') {
-            if (overlay) overlay.remove();
+            if (overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.remove(), 400);
+            }
             return;
         }
 
@@ -171,30 +167,32 @@ const StoreStatus = {
         overlay.innerHTML = `
             <div class="store-closed-container">
                 <div class="store-closed-content">
-                    <div class="store-closed-emoji">${message.emoji}</div>
+                    <span class="store-closed-emoji">${message.emoji}</span>
                     <h1 class="store-closed-title">${message.title}</h1>
                     <h2 class="store-closed-subtitle">${message.subtitle}</h2>
                     <p class="store-closed-description">${message.description}</p>
-                    
+
                     ${nextOpen ? `
                         <div class="store-closed-timer">
                             <p class="store-closed-reopens">⏰ Reabrimos em:</p>
                             <p class="store-closed-time">${nextOpen}</p>
                         </div>
                     ` : ''}
-                    
+
                     <div class="store-closed-info">
-                        <p>📱 Você pode continuar navegando, mas operações de compra/venda estão desativadas.</p>
+                        <p>📱 Você pode continuar navegando, mas as operações de compra e venda estão desativadas.</p>
                     </div>
                 </div>
             </div>
         `;
 
+        // Força reflow antes de adicionar .active para a transição funcionar
+        overlay.offsetHeight;
         overlay.classList.add('active');
     },
 
     /**
-     * ✅ Desativa botões de compra
+     * Desativa/ativa botões de compra conforme status
      */
     updateButtonStates() {
         try {
@@ -212,19 +210,17 @@ const StoreStatus = {
                     btn.style.cursor = 'pointer';
                 } else {
                     btn.disabled = true;
-                    btn.style.opacity = '0.5';
+                    btn.style.opacity = '0.4';
                     btn.style.cursor = 'not-allowed';
                 }
             });
-
-            log(`📦 Botões atualizados: ${this.status}`, 'info');
         } catch (err) {
             log(`⚠️ Erro ao atualizar botões: ${err.message}`, 'warning');
         }
     },
 
     /**
-     * ✅ TRAVA PARA CHECKOUT
+     * Trava para checkout
      */
     canCheckout() {
         if (this.status !== 'open') {
@@ -236,7 +232,7 @@ const StoreStatus = {
     },
 
     /**
-     * ✅ TRAVA PARA ADICIONAR AO CARRINHO
+     * Trava para adicionar ao carrinho
      */
     canAddToCart() {
         if (this.status !== 'open') {
@@ -248,10 +244,10 @@ const StoreStatus = {
     }
 };
 
-// ✅ INICIALIZAR QUANDO DOM ESTÁ PRONTO
+// Inicializar quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     StoreStatus.init();
 });
 
-// ✅ EXPOR GLOBALMENTE
+// Expor globalmente
 window.StoreStatus = StoreStatus;
